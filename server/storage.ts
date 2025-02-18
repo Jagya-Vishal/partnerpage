@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { log } from "./vite"; // Ensure you have a log function
+import { log } from "./vite"; // Ensure this function exists
 import path from "path";
 
 const app = express();
@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
+  const routePath = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
@@ -20,8 +20,8 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (routePath.startsWith("/api")) {
+      let logLine = `${req.method} ${routePath} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -45,12 +45,11 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
   });
 
   // Serve frontend build files in production
   if (process.env.NODE_ENV === "production") {
-    const clientBuildPath = path.join(__dirname, "../client/dist"); // Adjust this path
+    const clientBuildPath = path.join(__dirname, "../client/dist"); // Adjust path if needed
     app.use(express.static(clientBuildPath));
 
     app.get("*", (_req, res) => {
