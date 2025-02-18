@@ -1,15 +1,22 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import storage from "./storage"; // Ensure this file exists
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  // Sample API Route
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "Server is running" });
+  });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  app.get("/api/users", async (_req, res) => {
+    try {
+      const users = await storage.getUsers(); // Ensure `getUsers()` exists in storage.ts
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
 
   const httpServer = createServer(app);
-
   return httpServer;
 }
