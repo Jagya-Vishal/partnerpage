@@ -1,0 +1,115 @@
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
+
+const steps = [
+  {
+    number: "1",
+    title: "Integration with Existing Systems",
+    description:
+      "XSecuritas provides a simple API or plugin that works with most content management systems.",
+  },
+  {
+    number: "2",
+    title: "Embed Watermarks",
+    description:
+      "The watermarks are seamlessly embedded in documents, images, or videos without altering the original file.",
+  },
+  {
+    number: "3",
+    title: "Real-Time Monitoring",
+    description:
+      "3R Infotech (partner) monitors the data for leaks, ensuring that unauthorized distribution is immediately flagged.",
+  },
+  {
+    number: "4",
+    title: "Data Leak Detection & Response",
+    description:
+      "In case of a breach, 3R Infotech tracks the source and ensures swift action.",
+  },
+];
+
+function StepCircle({
+  number,
+  progress,
+}: {
+  number: string;
+  progress: number;
+}) {
+  return (
+    <motion.div
+      className="w-12 h-12 rounded-full flex items-center justify-center relative z-10"
+      style={{
+        border: "2px solid white",
+        background: `conic-gradient(#738DED ${progress * 360}deg, #D4D4D4 ${progress * 360}deg)`,
+      }}
+    >
+      <span className="text-white font-bold">{number}</span>
+    </motion.div>
+  );
+}
+
+export default function HowItWorks() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+
+  return (
+    <div className="relative">
+      <section ref={containerRef} className="py-24 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold">How it Works?</h2>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            {steps.map((step, index) => {
+              const circleProgress = useTransform(
+                scrollYProgress,
+                [index / steps.length, (index + 0.5) / steps.length],
+                [0, 1],
+              );
+
+              const lineProgress = useTransform(
+                scrollYProgress,
+                [(index + 0.5) / steps.length, (index + 1) / steps.length],
+                [0, 1],
+              );
+
+              return (
+                <div
+                  key={step.number}
+                  className="relative pl-16 mb-16 last:mb-0"
+                >
+                  {index < steps.length - 1 && (
+                    <motion.div
+                      className="absolute left-[22px] top-12 w-1 h-[calc(100%+4rem)]"
+                      style={{
+                        background: "#738DED",
+                        scaleY: lineProgress,
+                        transformOrigin: "top",
+                      }}
+                    />
+                  )}
+
+                  <motion.div className="absolute left-0 top-0">
+                    <StepCircle
+                      number={step.number}
+                      progress={circleProgress}
+                    />
+                  </motion.div>
+
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                    <p className="text-gray-600">{step.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
