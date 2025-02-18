@@ -22,13 +22,7 @@ export default defineConfig({
   },
   root: path.resolve(__dirname, "client"),
   build: {
-<<<<<<< HEAD
-    outDir: "dist",
-=======
     outDir: "dist", // This ensures it's inside client/
->>>>>>> 5a67433 (Fixed build issues and updated configuration)
     emptyOutDir: true,
   },
-  
-  
 });
