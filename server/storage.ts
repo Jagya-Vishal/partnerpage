@@ -1,39 +1,66 @@
-import { users, type User, type InsertUser } from "@shared/schema";
+import express, { type Request, Response, NextFunction } from "express";
+import { registerRoutes } from "./routes";
+import { log } from "./vite"; // Ensure you have a log function
+import path from "path";
 
-// modify the interface with any CRUD methods
-// you might need
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-}
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  currentId: number;
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
 
-  constructor() {
-    this.users = new Map();
-    this.currentId = 1;
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+
+      log(logLine);
+    }
+  });
+
+  next();
+});
+
+(async () => {
+  const server = await registerRoutes(app);
+
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    res.status(status).json({ message });
+    throw err;
+  });
+
+  // Serve frontend build files in production
+  if (process.env.NODE_ENV === "production") {
+    const clientBuildPath = path.join(__dirname, "../client/dist"); // Adjust this path
+    app.use(express.static(clientBuildPath));
+
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(clientBuildPath, "index.html"));
+    });
   }
 
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
-  }
-}
-
-export const storage = new MemStorage();
+  // Serve the app on port 3000
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, "0.0.0.0", () => {
+    log(`Server running on port ${PORT}`);
+  });
+})();
