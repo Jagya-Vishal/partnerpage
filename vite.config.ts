@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig({
+  base: "/", // Ensures proper asset linking on Netlify
   plugins: [
     react(),
     runtimeErrorOverlay(),
@@ -21,8 +22,17 @@ export default defineConfig({
     },
   },
   root: path.resolve(__dirname, "client"),
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://partnerpage.onrender.com", // Replace with actual backend URL
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
   build: {
-    outDir: "dist", // This ensures it's inside client/
+    outDir: path.resolve(__dirname, "client", "dist"),
     emptyOutDir: true,
   },
 });
